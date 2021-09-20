@@ -6,7 +6,7 @@ require('dotenv').config();
 exports.signup = async (req, res) => {
     const userExists = await User.findOne({ email: req.body.email });
     if (userExists)
-        return res.status(403).json({ message: 'User already exists' });
+        return res.status(403).json({ error: 'User already exists' });
 
     const user = new User(req.body);
     await user.save();
@@ -18,11 +18,13 @@ exports.signin = (req, res) => {
     const { email, password } = req.body;
     User.findOne({ email }, (err, user) => {
         if (err || !user) {
-            res.status(401).json({ message: 'User not found. Please Sign in' });
+            return res.status(401).json({
+                error: 'User not found. Please Sign up       ',
+            });
         }
-
+        console.log({ user });
         if (!user.authenticate(password)) {
-            res.status(401).json({ message: 'Email or password do not match' });
+            res.status(401).json({ error: 'Email or password do not match' });
         }
 
         const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
