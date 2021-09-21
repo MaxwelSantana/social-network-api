@@ -24,7 +24,9 @@ exports.signin = (req, res) => {
         }
         console.log({ user });
         if (!user.authenticate(password)) {
-            res.status(401).json({ error: 'Email or password do not match' });
+            return res
+                .status(401)
+                .json({ error: 'Email or password do not match' });
         }
 
         const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
