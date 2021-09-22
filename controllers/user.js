@@ -39,22 +39,6 @@ exports.getUser = (req, res) => {
     return res.json(req.profile);
 };
 
-// exports.updateUser = (req, res) => {
-//     let user = req.profile;
-//     user = _.extend(user, req.body);
-//     user.updated = Date.now();
-//     user.save((err) => {
-//         if (err) {
-//             return res
-//                 .status(400)
-//                 .json({ error: 'You are not authorized to update this user' });
-//         }
-//         user.hashed_password = undefined;
-//         user.salt = undefined;
-//         res.json(user);
-//     });
-// };
-
 exports.updateUser = (req, res) => {
     let form = new formidable.IncomingForm();
     form.keepExtensions = true;
@@ -95,4 +79,12 @@ exports.deleteUser = (req, res) => {
         }
         res.json({ message: 'User deleted successfully' });
     });
+};
+
+exports.userPhoto = (req, res, next) => {
+    if (req.profile.photo.data) {
+        res.set(('Content-Type', req.profile.photo.contentType));
+        return res.send(req.profile.photo.data);
+    }
+    next();
 };
