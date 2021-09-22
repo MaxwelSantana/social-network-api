@@ -7,11 +7,18 @@ const {
     deleteUser,
     hasAuthorization,
     userPhoto,
+    addFollowing,
+    addFollower,
+    removeFollowing,
+    removeFollower,
 } = require('../controllers/user');
 const { requireSign } = require('../controllers/auth');
 const { postById } = require('../controllers/post');
 
 const router = express.Router();
+
+router.put('/users/follow', requireSign, addFollowing, addFollower);
+router.put('/users/unfollow', requireSign, removeFollowing, removeFollower);
 
 router.get('/users', allUsers);
 router.get('/user/:userId', requireSign, getUser);

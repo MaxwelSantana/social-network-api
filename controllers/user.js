@@ -4,14 +4,17 @@ const fs = require('fs');
 const _ = require('lodash');
 
 exports.userById = (req, res, next, id) => {
-    User.findById(id).exec((err, user) => {
-        if (err || !user) {
-            return res.status(400).json({ error: 'User not found' });
-        }
+    User.findById(id)
+        .populate('following', '_id name')
+        .populate('followers', '_id name')
+        .exec((err, user) => {
+            if (err || !user) {
+                return res.status(400).json({ error: 'User not found' });
+            }
 
-        req.profile = user;
-        next();
-    });
+            req.profile = user;
+            next();
+        });
 };
 
 exports.hasAuthorization = (req, res, next) => {
@@ -87,4 +90,63 @@ exports.userPhoto = (req, res, next) => {
         return res.send(req.profile.photo.data);
     }
     next();
+};
+
+exports.addFollowing = (req, res, next) => {
+    User.findByIdAndUpdate(
+        req.body.userId,
+        { $push: { following: req.body.followId } },
+        (err, result) => {
+            if (err) {
+                return res.status(400).json({ error: err });
+            }
+            next();
+        },
+    );
+};
+
+exports.addFollower = (req, res) => {
+    User.findByIdAndUpdate(
+        req.body.followId,
+        { $push: { followers: req.body.userId } },
+        { new: true },
+    )
+        .populate('following', '_id name')
+        .populate('followers', '_id name')
+        .exec((err, result) => {
+            if (err) {
+                return res.status(400).json({
+                    error: err,
+                });
+            }
+            result.hashed_password = undefined;
+            result.salt = undefined;
+            res.json(result);
+        });
+};
+
+// remove follow unfollow
+exports.removeFollowing = (req, res, next) => {
+    User.findByIdAndUpdate(req.body.userId, { $pull: { following: req.body.unfollowId } }, (err, result) => {
+        if (err) {
+            return res.status(400).json({ error: err });
+        }
+        next();
+    });
+};
+
+exports.removeFollower = (req, res) => {
+    User.findByIdAndUpdate(req.body.unfollowId, { $pull: { followers: req.body.userId } }, { new: true })
+        .populate('following', '_id name')
+        .populate('followers', '_id name')
+        .exec((err, result) => {
+            if (err) {
+                return res.status(400).json({
+                    error: err
+                });
+            }
+            result.hashed_password = undefined;
+            result.salt = undefined;
+            res.json(result);
+        });
 };

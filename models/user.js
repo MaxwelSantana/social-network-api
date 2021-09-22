@@ -1,6 +1,7 @@
 mongoose = require('mongoose');
 const uuidv1 = require('uuidv1');
 const { createHmac } = require('crypto');
+const { ObjectId } = mongoose.Schema;
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -27,6 +28,8 @@ const userSchema = new mongoose.Schema({
         data: Buffer,
         contentType: String,
     },
+    following: [{ type: ObjectId, ref: 'User' }],
+    followers: [{ type: ObjectId, ref: 'User' }],
 });
 
 userSchema
