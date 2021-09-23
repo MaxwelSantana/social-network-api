@@ -93,8 +93,10 @@ exports.userPhoto = (req, res, next) => {
 };
 
 exports.addFollowing = (req, res, next) => {
+    const currentUserId = req.auth._id;
+    console.log('teste', currentUserId);
     User.findByIdAndUpdate(
-        req.body.userId,
+        currentUserId,
         { $push: { following: req.body.followId } },
         (err, result) => {
             if (err) {
@@ -106,9 +108,11 @@ exports.addFollowing = (req, res, next) => {
 };
 
 exports.addFollower = (req, res) => {
+    const currentUserId = req.auth._id;
+    console.log('teste', currentUserId);
     User.findByIdAndUpdate(
         req.body.followId,
-        { $push: { followers: req.body.userId } },
+        { $push: { followers: currentUserId } },
         { new: true },
     )
         .populate('following', '_id name')
@@ -127,26 +131,49 @@ exports.addFollower = (req, res) => {
 
 // remove follow unfollow
 exports.removeFollowing = (req, res, next) => {
-    User.findByIdAndUpdate(req.body.userId, { $pull: { following: req.body.unfollowId } }, (err, result) => {
-        if (err) {
-            return res.status(400).json({ error: err });
-        }
-        next();
-    });
+    const currentUserId = req.auth._id;
+    User.findByIdAndUpdate(
+        currentUserId,
+        { $pull: { following: req.body.unfollowId } },
+        (err, result) => {
+            if (err) {
+                return res.status(400).json({ error: err });
+            }
+            next();
+        },
+    );
 };
 
 exports.removeFollower = (req, res) => {
-    User.findByIdAndUpdate(req.body.unfollowId, { $pull: { followers: req.body.userId } }, { new: true })
+    const currentUserId = req.auth._id;
+    User.findByIdAndUpdate(
+        req.body.unfollowId,
+        { $pull: { followers: currentUserId } },
+        { new: true },
+    )
         .populate('following', '_id name')
         .populate('followers', '_id name')
         .exec((err, result) => {
             if (err) {
                 return res.status(400).json({
-                    error: err
+                    error: err,
                 });
             }
             result.hashed_password = undefined;
             result.salt = undefined;
             res.json(result);
         });
+};
+
+exports.findPeople = (req, res) => {
+    let exclude = req.profile.following;
+    exclude.push(req.profile._id);
+    User.find({ _id: { $nin: exclude } }, (err, users) => {
+        if (err) {
+            return res.status(400).json({
+                error: err,
+            });
+        }
+        res.json(users);
+    }).select('name');
 };

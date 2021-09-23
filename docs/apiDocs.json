@@ -5,6 +5,8 @@
 
     "/users": "get all users",
     "/user/:userId": "get/update/delete user",
+    "/user/follow": "follow user",
+    "/user/unfollow": "unfollow user",
 
     "/posts": "get all posts",
     "/posts/by/:userId": "get posts by user id",
