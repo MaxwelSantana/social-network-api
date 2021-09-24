@@ -4,22 +4,25 @@ const fs = require('fs');
 const _ = require('lodash');
 
 exports.postById = (req, res, next, id) => {
-    Post.findById(id).exec((err, post) => {
-        if (err || !post) {
-            return res.status(404).json({ error: err });
-        }
+    Post.findById(id)
+        .populate('postedBy', '_id name')
+        .exec((err, post) => {
+            if (err || !post) {
+                return res.status(404).json({ error: err });
+            }
 
-        req.post = post;
-        next();
-    });
+            req.post = post;
+            next();
+        });
 };
 
 exports.getPosts = (req, res) => {
     const posts = Post.find()
         .populate('postedBy', '_id name')
-        .select('_id title body')
+        .select('_id title body created')
+        .sort({ created: -1 })
         .then((posts) => {
-            res.json({ posts });
+            res.json(posts);
         })
         .catch((err) => {
             console.error(err);
@@ -76,14 +79,32 @@ exports.isPoster = (req, res, next) => {
 };
 
 exports.updatePost = (req, res, next) => {
-    let post = req.post;
-    post = _.extend(post, req.body);
-    post.updated = Date.now();
-    post.save((err, post) => {
+    let form = new formidable.IncomingForm();
+    form.keepExtensions = true;
+    form.parse(req, (err, fields, files) => {
         if (err) {
-            return res.status(400).json({ error: err });
+            return res.status(400).json({
+                error: 'Photo could not be uploaded',
+            });
         }
-        res.json(post);
+        // save post
+        let post = req.post;
+        post = _.extend(post, fields);
+        post.updated = Date.now();
+
+        if (files.photo) {
+            post.photo.data = fs.readFileSync(files.photo.path);
+            post.photo.contentType = files.photo.type;
+        }
+
+        post.save((err, result) => {
+            if (err) {
+                return res.status(400).json({
+                    error: err,
+                });
+            }
+            res.json(post);
+        });
     });
 };
 
@@ -95,4 +116,13 @@ exports.deletePost = (req, res, next) => {
         }
         res.json({ message: 'Post deleted successfully' });
     });
+};
+
+exports.photo = (req, res, next) => {
+    res.set('Content-Type', req.post.photo.contentType);
+    return res.send(req.post.photo.data);
+};
+
+exports.singlePost = (req, res) => {
+    res.json(req.post);
 };
